@@ -272,21 +272,31 @@ export const ResumeRenderer: React.FC<ResumeRendererProps> = ({ data, templateId
 
   const renderBannerTemplate = () => (
      <div className="h-full flex flex-col bg-white">
-        <div className="bg-indigo-950 text-white p-8 pb-10 shadow-md shrink-0 flex justify-between items-center">
-           <div>
-             <h1 className="text-3xl font-bold mb-2 tracking-tight">{data.personalInfo.name}</h1>
-             <p className="text-indigo-200 text-base font-medium">{getFullTitle()}</p>
-              <div className="mt-4 text-xs space-y-1 text-indigo-100 font-light opacity-80">
-                 <div>{getGenderText()} &bull; {data.personalInfo.location}</div>
-                 <div>{data.personalInfo.email}</div>
-                 {data.mode === 'domestic' && <div>{data.personalInfo.phone}</div>}
-              </div>
-           </div>
-           {data.mode === 'domestic' && data.personalInfo.avatar && (
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-indigo-800">
-                <img src={data.personalInfo.avatar} className="w-full h-full object-cover" />
-              </div>
+        <div className="bg-indigo-950 text-white p-8 pb-10 shadow-md shrink-0 flex justify-between items-center relative overflow-hidden">
+           {/* Background Image Layer */}
+           {data.personalInfo.banner && (
+             <div className="absolute inset-0 z-0">
+               <img src={data.personalInfo.banner} className="w-full h-full object-cover opacity-30" />
+               <div className="absolute inset-0 bg-indigo-950/70 mix-blend-multiply"></div>
+             </div>
            )}
+           
+           <div className="relative z-10 w-full flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold mb-2 tracking-tight">{data.personalInfo.name}</h1>
+                <p className="text-indigo-200 text-base font-medium">{getFullTitle()}</p>
+                 <div className="mt-4 text-xs space-y-1 text-indigo-100 font-light opacity-80">
+                    <div>{getGenderText()} &bull; {data.personalInfo.location}</div>
+                    <div>{data.personalInfo.email}</div>
+                    {data.mode === 'domestic' && <div>{data.personalInfo.phone}</div>}
+                 </div>
+              </div>
+              {data.mode === 'domestic' && data.personalInfo.avatar && (
+                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-indigo-800 shadow-lg">
+                   <img src={data.personalInfo.avatar} className="w-full h-full object-cover" />
+                 </div>
+              )}
+           </div>
         </div>
 
         <div className="flex-1 p-8 grid grid-cols-[2fr_1fr] gap-8">
@@ -457,7 +467,7 @@ export const ResumeRenderer: React.FC<ResumeRendererProps> = ({ data, templateId
       <header className="flex justify-between items-start border-b-2 border-gray-900 pb-6 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-wide uppercase mb-2 font-serif">{data.personalInfo.name}</h1>
-          <div className="text-sm italic text-gray-600 mb-4">{getFullTitle()}</div>
+          <div className="text-sm italic text-gray-600 mb-4">{getFullTitle()}</p>
           <div className="flex gap-4 text-sm font-medium">
               <span>{getGenderText()}</span>
               <span>{data.personalInfo.email}</span>

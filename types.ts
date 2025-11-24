@@ -31,6 +31,7 @@ export interface ResumeData {
   personalInfo: {
     name: string;
     avatar: string;
+    banner?: string; // Added banner field
     jobTitle: string;
     yearsExp: string;
     gender: Gender;

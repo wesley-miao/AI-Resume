@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import { 
   User, Briefcase, GraduationCap, Wrench, FolderGit2, 
   Plus, Trash2, RefreshCw, Download, Palette, Check, X,
-  Sparkles, Camera, Image as ImageIcon, ChevronRight, Sun, Moon, Loader2, Globe, Quote
+  Sparkles, Camera, Image as ImageIcon, ChevronRight, Sun, Moon, Loader2, Globe, Quote, Wand2, Upload
 } from 'lucide-react';
 
 import { ResumeData, Mode, Gender, SkillStyle, TemplateId } from './types';
@@ -22,12 +22,19 @@ const App = () => {
   const [isGeneratingName, setIsGeneratingName] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<TemplateId>('classic');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to Dark Mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasEdited, setHasEdited] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(INSPIRATIONAL_QUOTES[0]);
+  
+  // AI Image Editing State
+  const [isAiImageProcessing, setIsAiImageProcessing] = useState(false);
+  const [aiImagePrompt, setAiImagePrompt] = useState('');
+  const [activeImageField, setActiveImageField] = useState<'avatar' | 'banner' | null>(null);
+
   const aiRef = useRef<GoogleGenAI | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize AI
   useEffect(() => {
@@ -45,7 +52,7 @@ const App = () => {
     }
   }, [isDarkMode]);
 
-  // Quote Rotation Logic - Updated to 10 seconds
+  // Quote Rotation Logic - 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       const randomIndex = Math.floor(Math.random() * INSPIRATIONAL_QUOTES.length);
@@ -81,7 +88,6 @@ const App = () => {
 
   const handleGenderChange = (newGender: Gender) => {
     markEdited();
-    // Check if current avatar is one of the defaults
     const currentAvatar = data.personalInfo.avatar;
     const isDefault = currentAvatar === MALE_AVATAR || currentAvatar === FEMALE_AVATAR || currentAvatar === NEUTRAL_AVATAR || currentAvatar.includes('dicebear') || currentAvatar.startsWith('data:image/svg+xml');
     
@@ -123,19 +129,94 @@ const App = () => {
     }
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
+  // Image Upload Handlers
+  const handleAvatarClick = () => fileInputRef.current?.click();
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        updatePersonalInfo('avatar', reader.result as string);
-      };
+      reader.onloadend = () => updatePersonalInfo('avatar', reader.result as string);
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleBannerClick = () => bannerInputRef.current?.click();
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+       const reader = new FileReader();
+       reader.onloadend = () => updatePersonalInfo('banner', reader.result as string);
+       reader.readAsDataURL(file);
+    }
+  };
+
+  // AI Image Editing Logic
+  const handleAiImageEdit = async () => {
+     if (!aiRef.current || !activeImageField) return;
+     setIsAiImageProcessing(true);
+
+     try {
+        const currentImage = data.personalInfo[activeImageField];
+        let imagePart = null;
+
+        if (currentImage) {
+           // Convert current image to base64 PNG if it's a data URI or try to fetch if it's a URL
+           let base64Data = '';
+           if (currentImage.startsWith('data:')) {
+               base64Data = currentImage.split(',')[1];
+           } else {
+               // Attempt to fetch remote URL
+               try {
+                  const resp = await fetch(currentImage);
+                  const blob = await resp.blob();
+                  base64Data = await new Promise<string>((resolve) => {
+                     const reader = new FileReader();
+                     reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+                     reader.readAsDataURL(blob);
+                  });
+               } catch (e) {
+                  // If fetch fails (CORS), we can't edit.
+                  console.warn("Could not fetch image for editing", e);
+               }
+           }
+           
+           if (base64Data) {
+              imagePart = {
+                 inlineData: {
+                    mimeType: 'image/png',
+                    data: base64Data
+                 }
+              };
+           }
+        }
+
+        const parts: any[] = [];
+        if (imagePart) parts.push(imagePart);
+        parts.push({ text: aiImagePrompt });
+
+        const response = await aiRef.current.models.generateContent({
+           model: 'gemini-2.5-flash-image',
+           contents: { parts }
+        });
+
+        // Extract image from response
+        if (response.candidates && response.candidates[0].content.parts) {
+           for (const part of response.candidates[0].content.parts) {
+              if (part.inlineData) {
+                 const newImageUrl = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+                 updatePersonalInfo(activeImageField, newImageUrl);
+                 break;
+              }
+           }
+        }
+     } catch (error) {
+        console.error("AI Image Generation Failed:", error);
+        alert("图片生成失败，请稍后重试。");
+     } finally {
+        setIsAiImageProcessing(false);
+        setActiveImageField(null);
+        setAiImagePrompt('');
+     }
   };
 
   const addArrayItem = <T extends { id: string }>(field: 'education' | 'work' | 'projects', newItem: T) => {
@@ -206,9 +287,7 @@ const App = () => {
       alert("您还未进行编辑哦！");
       return;
     }
-
     setIsExporting(true);
-
     setTimeout(() => {
       const element = document.getElementById('resume-preview');
       if (element && window.html2pdf) {
@@ -219,7 +298,6 @@ const App = () => {
           html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-
         window.html2pdf().set(opt).from(element).save()
           .then(() => setIsExporting(false))
           .catch((err: any) => {
@@ -246,11 +324,11 @@ const App = () => {
            </div>
            <div className="flex items-baseline gap-2">
               <h1 className="text-xl font-semibold tracking-tight text-light-text dark:text-white">AI Resume</h1>
-              <span className="text-[10px] font-medium text-gray-500 dark:text-dark-secondary bg-gray-100 dark:bg-dark-card px-1.5 py-0.5 rounded-full border dark:border-dark-border">v0.0.7.7</span>
+              <span className="text-[10px] font-medium text-gray-500 dark:text-dark-secondary bg-gray-100 dark:bg-dark-card px-1.5 py-0.5 rounded-full border dark:border-dark-border">v0.0.8</span>
            </div>
         </div>
 
-        {/* Quotes Section (Center) - GRADIENT ANIMATION */}
+        {/* Quotes Section */}
         <div className="flex-1 flex justify-center overflow-hidden px-4">
           <div className="flex items-center gap-3 w-full justify-center transition-all duration-500 ease-in-out">
             <Quote className="w-5 h-5 text-gray-300 dark:text-zinc-600 opacity-50 shrink-0 mb-4 hidden md:block" />
@@ -271,14 +349,12 @@ const App = () => {
               {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               <span className="text-xs font-medium">{isDarkMode ? '深色模式' : '浅色模式'}</span>
            </button>
-
            <button 
               onClick={() => setShowTemplateModal(true)}
               className="px-4 py-1.5 bg-gray-100/80 hover:bg-gray-200 dark:bg-dark-card dark:hover:bg-zinc-800 text-light-text dark:text-white text-sm font-medium rounded-full transition-all flex items-center gap-2 border border-transparent dark:border-dark-border"
            >
               <Palette className="w-4 h-4" /> 切换模板
            </button>
-
            <button 
               onClick={handleExport}
               disabled={isExporting}
@@ -295,8 +371,46 @@ const App = () => {
       </header>
 
       {/* 2. Main Content Area */}
-      <div className="flex flex-1 overflow-hidden p-6 gap-6 max-w-[1600px] mx-auto w-full">
+      <div className="flex flex-1 overflow-hidden p-6 gap-6 max-w-[1600px] mx-auto w-full relative">
         
+        {/* AI Image Prompt Modal */}
+        {activeImageField && (
+           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <div className="bg-white dark:bg-dark-card p-6 rounded-2xl shadow-2xl w-[400px] border border-gray-200 dark:border-dark-border animate-in zoom-in-95 duration-200">
+                 <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold flex items-center gap-2 dark:text-white">
+                       <Wand2 className="w-5 h-5 text-purple-500"/> 
+                       {activeImageField === 'avatar' ? 'AI 头像编辑' : 'AI 封面生成'}
+                    </h3>
+                    <button onClick={() => setActiveImageField(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                       <X className="w-5 h-5"/>
+                    </button>
+                 </div>
+                 <div className="space-y-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                       {activeImageField === 'avatar' 
+                          ? "描述你想如何修改当前头像（例如：添加复古滤镜、戴上眼镜）。"
+                          : "描述你想要的封面图风格（例如：简约几何风格、科技感背景）。"}
+                    </p>
+                    <textarea
+                       value={aiImagePrompt}
+                       onChange={(e) => setAiImagePrompt(e.target.value)}
+                       placeholder={activeImageField === 'avatar' ? "例如: 变成卡通风格..." : "例如: 简约的蓝色几何背景..."}
+                       className="w-full p-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/20 outline-none min-h-[100px] dark:text-white"
+                    />
+                    <button 
+                       onClick={handleAiImageEdit}
+                       disabled={isAiImageProcessing || !aiImagePrompt.trim()}
+                       className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                       {isAiImageProcessing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>}
+                       {isAiImageProcessing ? '正在生成...' : '开始生成'}
+                    </button>
+                 </div>
+              </div>
+           </div>
+        )}
+
         {/* Left Panel: Editor (30% width) */}
         <div className="w-[30%] min-w-[320px] bg-light-card dark:bg-dark-card rounded-2xl shadow-sm border border-gray-200/50 dark:border-dark-border overflow-y-auto flex flex-col shrink-0 editor-panel no-scrollbar no-print transition-colors">
           <div className="p-6 space-y-8 pb-20">
@@ -331,6 +445,7 @@ const App = () => {
                 <User className="w-4 h-4 text-gray-400" /> 个人信息
               </h2>
               
+              {/* Avatar Section */}
               <div className="flex items-center gap-5 p-4 bg-gray-50/80 dark:bg-zinc-800/50 rounded-2xl border border-gray-100 dark:border-dark-border transition-colors">
                  <div 
                     className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 shrink-0 cursor-pointer relative group border border-gray-200 dark:border-zinc-700"
@@ -342,13 +457,25 @@ const App = () => {
                     </div>
                  </div>
                  <div className="flex-1">
-                    <button 
-                       onClick={handleAvatarClick}
-                       className="text-sm font-medium text-[#0071e3] hover:underline flex items-center gap-1.5 mb-1"
-                    >
-                       <ImageIcon className="w-4 h-4" /> 上传头像
-                    </button>
-                    <p className="text-xs text-gray-500 dark:text-dark-secondary">建议尺寸 200x200px</p>
+                    <div className="flex items-center gap-2 mb-1">
+                       <button 
+                          onClick={handleAvatarClick}
+                          className="text-sm font-medium text-[#0071e3] hover:underline flex items-center gap-1"
+                       >
+                          <ImageIcon className="w-4 h-4" /> 上传头像
+                       </button>
+                       <button
+                          onClick={() => {
+                             setActiveImageField('avatar');
+                             setAiImagePrompt('');
+                          }}
+                          className="p-1.5 text-purple-600 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors"
+                          title="AI 编辑头像"
+                       >
+                          <Wand2 className="w-3.5 h-3.5"/>
+                       </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-dark-secondary">支持 JPG/PNG/SVG</p>
                     <input 
                        type="file" 
                        ref={fileInputRef} 
@@ -357,6 +484,49 @@ const App = () => {
                        onChange={handleAvatarChange}
                     />
                  </div>
+              </div>
+              
+              {/* Banner Section */}
+              <div className="flex items-center gap-5 p-4 bg-gray-50/80 dark:bg-zinc-800/50 rounded-2xl border border-gray-100 dark:border-dark-border transition-colors">
+                  <div 
+                    className="w-16 h-10 rounded-lg overflow-hidden bg-gray-200 shrink-0 border border-gray-200 dark:border-zinc-700 relative group"
+                  >
+                     {data.personalInfo.banner ? (
+                       <img src={data.personalInfo.banner} className="w-full h-full object-cover" />
+                     ) : (
+                       <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-zinc-700 text-gray-400">
+                         <ImageIcon className="w-5 h-5"/>
+                       </div>
+                     )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                       <button 
+                          onClick={handleBannerClick}
+                          className="text-sm font-medium text-[#0071e3] hover:underline flex items-center gap-1"
+                       >
+                          <Upload className="w-4 h-4" /> 上传封面
+                       </button>
+                       <button
+                          onClick={() => {
+                             setActiveImageField('banner');
+                             setAiImagePrompt(data.personalInfo.banner ? '' : '为我的简历网站设计一个简约风的banner'); // Pre-fill prompt for generation
+                          }}
+                          className="p-1.5 text-purple-600 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg transition-colors"
+                          title={data.personalInfo.banner ? "AI 编辑封面" : "AI 生成封面"}
+                       >
+                          <Wand2 className="w-3.5 h-3.5"/>
+                       </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-dark-secondary">仅部分模板支持</p>
+                    <input 
+                       type="file" 
+                       ref={bannerInputRef} 
+                       className="hidden" 
+                       accept="image/*"
+                       onChange={handleBannerChange}
+                    />
+                  </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

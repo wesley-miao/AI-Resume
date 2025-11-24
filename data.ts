@@ -23,6 +23,7 @@ export const INITIAL_DATA: ResumeData = {
   personalInfo: {
     name: '张三',
     avatar: NEUTRAL_AVATAR,
+    banner: '', // Initial empty banner
     jobTitle: '测试工程师',
     yearsExp: '3年经验',
     gender: 'male',
