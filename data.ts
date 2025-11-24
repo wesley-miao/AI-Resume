@@ -1,13 +1,28 @@
 import { ResumeData, TemplateConfig } from './types';
 
-export const MALE_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix';
-export const FEMALE_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka';
+export const MALE_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Brian&top=shortHair,shortHairTheCaesar,shortHairFrizzle&clothing=blazerAndShirt,collarAndSweater&accessories=glasses,none&facialHair=beardLight,beardMedium,mustache';
+export const FEMALE_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica&top=longHair,longHairBob,longHairStraight,longHairCurly&clothing=blazerAndShirt,collarAndSweater&accessories=glasses,none&facialHairProbability=0';
+// Updated to Base64 SVG for reliability
+export const NEUTRAL_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMTAwIDQ1QzgzLjQzMTUgNDUgNzAgNTguNDMxNSA3MCA3NUM3MCA5MS41Njg1IDgzLjQzMTUgMTA1IDEwMCAxMDVDMTE2LjU2OSAxMDUgMTMwIDkxLjU2ODUgMTMwIDc1QzEzMCA1OC40MzE1IDExNi41NjkgNDUgMTAwIDQ1Wk02MCAxNzAuNUM2MCAxNDguMTM0IDc3LjkwODYgMTMwIDEwMCAxMzBDMTIyLjA5MSAxMzAgMTQwIDE0OC4xMzQgMTQwIDE3MC41VjE4NUMxNDAgMTkzLjI4NCAxMzMuMjg0IDIwMCAxMjUgMjAwSDc1QzY2LjcxNTcgMjAwIDYwIDE5My4yODQgNjAgMTg1VjE3MC41WiIgZmlsbD0iIzlDQTNBRiIvPgo8L3N2Zz4K';
+
+export const INSPIRATIONAL_QUOTES = [
+  "星光不问赶路人，时光不负有心人。",
+  "海阔凭鱼跃，天高任鸟飞。",
+  "路虽远，行则将至；事虽难，做则必成。",
+  "不积跬步，无以至千里；不积小流，无以成江海。",
+  "长风破浪会有时，直挂云帆济沧海。",
+  "每一个不曾起舞的日子，都是对生命的辜负。",
+  "种一棵树最好的时间是十年前，其次是现在。",
+  "既然选择了远方，便只顾风雨兼程。",
+  "追逐梦想的道路上，你我皆是黑马。",
+  "相信自己，你比想象中更强大。"
+];
 
 export const INITIAL_DATA: ResumeData = {
   mode: 'domestic',
   personalInfo: {
     name: '张三',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+    avatar: NEUTRAL_AVATAR,
     jobTitle: '测试工程师',
     yearsExp: '3年经验',
     gender: 'male',

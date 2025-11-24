@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,28 @@
   <script>
     tailwind.config = {
       darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            // Enhanced Palette
+            light: {
+              bg: '#F8FAFC', // Slate 50
+              card: '#FFFFFF',
+              border: '#E2E8F0', // Slate 200
+              text: '#0F172A', // Slate 900
+              secondary: '#64748B' // Slate 500
+            },
+            dark: {
+              bg: '#09090b', // Zinc 950 - Much deeper, high contrast background
+              card: '#18181b', // Zinc 900 - Distinct card surface
+              border: '#27272a', // Zinc 800 - Subtle borders
+              text: '#fafafa', // Zinc 50 - High contrast text
+              secondary: '#a1a1aa', // Zinc 400 - Readable secondary text
+              input: '#27272a' // Zinc 800 for inputs
+            }
+          }
+        }
+      }
     }
   </script>
   <!-- Add html2pdf.js for PDF export functionality -->
@@ -16,7 +38,6 @@
   <style>
     body { 
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      /* background-color: #F5F5F7;  Handled by Tailwind classes now */
       -webkit-font-smoothing: antialiased;
     }
     
@@ -28,6 +49,18 @@
     .no-scrollbar {
       -ms-overflow-style: none;  /* IE and Edge */
       scrollbar-width: none;  /* Firefox */
+    }
+
+    /* Gradient Text Animation */
+    @keyframes gradient-x {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .animate-gradient-x {
+      animation: gradient-x 3s ease infinite;
+      background-size: 200% 200%;
     }
     
     .a4-paper {
@@ -103,7 +136,7 @@
 }
 </script>
 </head>
-<body class="h-screen overflow-hidden text-gray-900 bg-[#F5F5F7] dark:bg-[#363636] transition-colors duration-300">
+<body class="h-screen overflow-hidden bg-light-bg dark:bg-dark-bg transition-colors duration-300">
   <div id="root" class="h-full"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
