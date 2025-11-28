@@ -467,7 +467,7 @@ export const ResumeRenderer: React.FC<ResumeRendererProps> = ({ data, templateId
       <header className="flex justify-between items-start border-b-2 border-gray-900 pb-6 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-wide uppercase mb-2 font-serif">{data.personalInfo.name}</h1>
-          <div className="text-sm italic text-gray-600 mb-4">{getFullTitle()}</p>
+          <div className="text-sm italic text-gray-600 mb-4">{getFullTitle()}</div>
           <div className="flex gap-4 text-sm font-medium">
               <span>{getGenderText()}</span>
               <span>{data.personalInfo.email}</span>
@@ -591,7 +591,7 @@ export const ResumeRenderer: React.FC<ResumeRendererProps> = ({ data, templateId
                          <h4 className="font-bold text-lg">{w.company}</h4>
                          <span className="text-xs bg-gray-100 px-2 py-0.5">{w.dateRange}</span>
                       </div>
-                      <div className="text-sm font-bold text-gray-500 mb-1">>> {w.jobTitle}</div>
+                      <div className="text-sm font-bold text-gray-500 mb-1">{`> ${w.jobTitle}`}</div>
                    </div>
                 ))}
              </div>

@@ -14,6 +14,7 @@ import { ResumeRenderer } from './templates';
 declare global {
   interface Window {
     html2pdf: any;
+    html2canvas?: any;
   }
 }
 
@@ -25,6 +26,7 @@ const App = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasEdited, setHasEdited] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(INSPIRATIONAL_QUOTES[0]);
   
   // AI Image Editing State
@@ -313,6 +315,45 @@ const App = () => {
     }, 100);
   };
 
+  const handleExportImage = async () => {
+    if (!hasEdited) {
+      alert("您还未进行编辑哦！");
+      return;
+    }
+
+    if (!window.html2canvas) {
+      alert("当前环境暂不支持导出图片，请稍后重试或使用 PDF 导出。");
+      return;
+    }
+
+    setIsExportingImage(true);
+
+    try {
+      const element = document.getElementById('resume-preview');
+      if (!element) throw new Error('Resume preview element not found');
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await window.html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${data.personalInfo.name || '我的'}_简历.png`;
+      link.click();
+    } catch (error) {
+      console.error('Image export failed:', error);
+      alert('图片导出失败，请重试或使用 PDF 导出。');
+    } finally {
+      setIsExportingImage(false);
+    }
+  };
+
   return (
     <div className={`flex flex-col h-screen font-sans bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text transition-colors duration-300`}>
       {/* 1. Global Header */}
@@ -349,13 +390,25 @@ const App = () => {
               {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
               <span className="text-xs font-medium">{isDarkMode ? '深色模式' : '浅色模式'}</span>
            </button>
-           <button 
+           <button
               onClick={() => setShowTemplateModal(true)}
               className="px-4 py-1.5 bg-gray-100/80 hover:bg-gray-200 dark:bg-dark-card dark:hover:bg-zinc-800 text-light-text dark:text-white text-sm font-medium rounded-full transition-all flex items-center gap-2 border border-transparent dark:border-dark-border"
            >
               <Palette className="w-4 h-4" /> 切换模板
            </button>
-           <button 
+           <button
+              onClick={handleExportImage}
+              disabled={isExportingImage}
+              className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
+                  isExportingImage
+                  ? 'bg-gray-300 dark:bg-zinc-800 cursor-not-allowed text-gray-500 dark:text-gray-400'
+                  : 'bg-white hover:bg-gray-100 dark:bg-dark-card dark:hover:bg-zinc-800 text-gray-700 dark:text-white border border-gray-200 dark:border-dark-border shadow-sm'
+              }`}
+           >
+              {isExportingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+              {isExportingImage ? '生成中...' : '导出图片'}
+           </button>
+           <button
               onClick={handleExport}
               disabled={isExporting}
               className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all flex items-center gap-2 ${
